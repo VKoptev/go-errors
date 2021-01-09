@@ -1,6 +1,7 @@
 # go-errors
 
 [![GoDoc](https://pkg.go.dev/badge/github.com/VKoptev/go-errors)](https://pkg.go.dev/github.com/VKoptev/go-errors)
+![golangci-lint](https://github.com/VKoptev/go-errors/workflows/golangci-lint/badge.svg)
 
 Errors wrapper for more convenience :)
 
