@@ -1,0 +1,96 @@
+
+run:
+  concurrency: 4
+  timeout: 1m
+  issues-exit-code: 1
+  tests: true
+  skip-dirs-use-default: true
+
+output:
+  format: colored-line-number
+  print-issued-lines: true
+  print-linter-name: true
+  uniq-by-line: true
+  sort-results: true
+
+# all available settings of specific linters
+linters-settings:
+  dogsled:
+    max-blank-identifiers: 2
+  dupl:
+    threshold: 150
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+  exhaustive:
+    check-generated: false
+    default-signifies-exhaustive: false
+  funlen:
+    lines: 60
+    statements: 40
+  gci:
+    local-prefixes: "github.com/VKoptev/go-errors"
+  gocognit:
+    min-complexity: 10
+  nestif:
+    min-complexity: 5
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+  gocritic:
+    enabled-tags:
+      - performance
+      - diagnostic
+
+    settings:
+      hugeParam:
+        sizeThreshold: 100
+      captLocal:
+        paramsOnly: true
+      rangeValCopy:
+        sizeThreshold: 32
+  gocyclo:
+    min-complexity: 10
+  godot:
+    scope: declarations
+    capital: false
+  gofmt:
+    simplify: true
+  goimports:
+    local-prefixes: "github.com/VKoptev/go-errors"
+  golint:
+    min-confidence: 0.8
+  govet:
+    check-shadowing: true
+    enable-all: true
+  lll:
+    line-length: 120
+    tab-width: 1
+  maligned:
+    suggest-new: true
+  nakedret:
+    max-func-lines: 30
+  prealloc:
+    simple: true
+    range-loops: true
+    for-loops: false
+  unparam:
+    check-exported: false
+  unused:
+    check-exported: false
+  errorlint:
+    errorf: true
+linters:
+  enable-all: true
+  fast: false
+
+
+issues:
+  exclude-rules:
+    - linters:
+        - govet
+      text: declaration of "(err|ctx)" shadows declaration
+  exclude-use-default: false
+  max-per-linter: 0
+  max-same-issues: 0
+  new: false
