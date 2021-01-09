@@ -82,3 +82,46 @@ func testTable(t *testing.T, f func(error, ...error) bool, tt []test) {
 		})
 	}
 }
+
+type dummyErr struct{}
+
+func (d *dummyErr) Error() string {
+	return ""
+}
+
+func (d *dummyErr) As(error) bool {
+	return false
+}
+
+func TestAs(t *testing.T) {
+	t.Parallel()
+
+	var (
+		err *Error
+		dum *dummyErr
+	)
+
+	tt := []struct {
+		nam string
+		err error
+		tgt interface{}
+		exp bool
+	}{
+		{nam: "(err1,*Error)", err: err1, tgt: &err, exp: false},
+		{nam: "(err3,*Error)", err: err3, tgt: &err, exp: true},
+		{nam: "(err1,*dummyErr)", err: err1, tgt: &dum, exp: false},
+		{nam: "(err3,*dummyErr)", err: err3, tgt: &dum, exp: false},
+	}
+
+	for _, tc := range tt {
+		tc := tc
+
+		t.Run(tc.nam, func(t *testing.T) {
+			t.Parallel()
+
+			if As(tc.err, tc.tgt) != tc.exp {
+				t.Errorf("actual=%v expected=%v", As(tc.err, tc.tgt), tc.exp)
+			}
+		})
+	}
+}
