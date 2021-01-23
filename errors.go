@@ -39,21 +39,11 @@ func (e *Error) WithReason(reason string) *Error {
 func (e *Error) WithErr(err error) *Error {
 	var t *Error
 
-	if !errors.As(err, &t) || e.reason != t.reason {
-		e.err = err
-
-		return e
+	if errors.As(err, &t) {
+		return e.chainError(t)
 	}
 
-	if e.reason == t.reason {
-		e.err = t.err
-
-		if e.x == nil && t.x != nil {
-			e.x = t.x
-		}
-	}
-
-	return e
+	return e.chain(err)
 }
 
 // WithX sets error data and returns self.
@@ -112,4 +102,26 @@ func (e *Error) Is(target error) bool {
 	}
 
 	return errors.Is(e.err, target)
+}
+
+func (e *Error) chain(err error) *Error {
+	if e.err != nil {
+		err = WithReason(err.Error()).WithErr(e.err)
+	}
+
+	e.err = err
+
+	return e
+}
+
+func (e *Error) chainError(err *Error) *Error {
+	if e.reason != err.reason {
+		return e.chain(err)
+	}
+
+	if e.x == nil && err.x != nil {
+		e.x = err.x
+	}
+
+	return e.chain(err.err)
 }
