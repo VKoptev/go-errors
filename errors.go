@@ -39,6 +39,10 @@ func IfErr(err error) *Error {
 
 // WithReason sets error reason and returns self.
 func (e *Error) WithReason(reason string) *Error {
+	if e == nil {
+		return WithReason(reason)
+	}
+
 	if e.reason != "" {
 		return &Error{reason: reason, err: e, x: nil}
 	}
@@ -48,6 +52,10 @@ func (e *Error) WithReason(reason string) *Error {
 
 // WithErr sets error and returns self.
 func (e *Error) WithErr(err error) *Error {
+	if e == nil {
+		return WithErr(err)
+	}
+
 	if e.err != nil {
 		return &Error{reason: e.Error(), err: err, x: nil}
 	}
@@ -57,6 +65,10 @@ func (e *Error) WithErr(err error) *Error {
 
 // WithX sets error data and returns self.
 func (e *Error) WithX(x interface{}) *Error {
+	if e == nil {
+		return WithX(x)
+	}
+
 	if e.x != nil {
 		return &Error{reason: e.Error(), err: nil, x: x}
 	}
