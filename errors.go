@@ -13,44 +13,64 @@ type Error struct {
 	x      interface{}
 }
 
-// WithReason returns new error with set error reason.
+// WithReason returns new Error with set error reason.
 func WithReason(code string) *Error {
 	return &Error{reason: code, err: nil, x: nil}
 }
 
-// WithErr returns new error with set error.
+// WithErr returns new Error with set error.
 func WithErr(err error) *Error {
 	return &Error{reason: "", err: err, x: nil}
 }
 
-// WithX returns new error with set error data.
+// WithX returns new Error with set error data.
 func WithX(x interface{}) *Error {
 	return &Error{reason: "", err: nil, x: x}
 }
 
+// IfErr returns new Error if specified err is not nil. Otherwise it returns nil.
+func IfErr(err error) *Error {
+	if err == nil {
+		return nil
+	}
+
+	return WithErr(err)
+}
+
 // WithReason sets error reason and returns self.
 func (e *Error) WithReason(reason string) *Error {
-	e.reason = reason
+	if e.reason != "" {
+		return &Error{reason: reason, err: e, x: nil}
+	}
 
-	return e
+	return &Error{reason: reason, err: e.err, x: e.x}
 }
 
 // WithErr sets error and returns self.
 func (e *Error) WithErr(err error) *Error {
-	var t *Error
-
-	if errors.As(err, &t) {
-		return e.chainError(t)
+	if e.err != nil {
+		return &Error{reason: e.Error(), err: err, x: nil}
 	}
 
-	return e.chain(err)
+	return &Error{reason: e.reason, err: err, x: e.x}
 }
 
 // WithX sets error data and returns self.
 func (e *Error) WithX(x interface{}) *Error {
-	e.x = x
+	if e.x != nil {
+		return &Error{reason: e.Error(), err: nil, x: x}
+	}
 
-	return e
+	return &Error{reason: e.reason, err: e.err, x: x}
+}
+
+// IfErr sets error and returns self if specified err is not nil. Otherwise it returns nil.
+func (e *Error) IfErr(err error) *Error {
+	if err == nil {
+		return nil
+	}
+
+	return e.WithErr(err)
 }
 
 // Error implements builtin/error interface.
@@ -102,26 +122,4 @@ func (e *Error) Is(target error) bool {
 	}
 
 	return errors.Is(e.err, target)
-}
-
-func (e *Error) chain(err error) *Error {
-	if e.err != nil {
-		err = WithReason(err.Error()).WithErr(e.err)
-	}
-
-	e.err = err
-
-	return e
-}
-
-func (e *Error) chainError(err *Error) *Error {
-	if e.reason != err.reason {
-		return e.chain(err)
-	}
-
-	if e.x == nil && err.x != nil {
-		e.x = err.x
-	}
-
-	return e.chain(err.err)
 }
