@@ -57,7 +57,13 @@ func (e *Error) WithErr(err error) *Error {
 	}
 
 	if e.err != nil {
-		return &Error{reason: e.Error(), err: err, x: nil}
+		var t *Error
+
+		if errors.As(e.err, &t) {
+			err = t.WithErr(err)
+		} else {
+			err = &Error{reason: e.err.Error(), err: err, x: nil}
+		}
 	}
 
 	return &Error{reason: e.reason, err: err, x: e.x}
@@ -125,13 +131,23 @@ func (e *Error) Unwrap() error {
 	return e.err
 }
 
+//nolint:gocognit
 // Is implements errors/Is interface.
 func (e *Error) Is(target error) bool {
-	var t *Error
-
-	if errors.As(target, &t) {
-		return t.reason == e.reason
+	if e.Error() == target.Error() || e.reason == target.Error() {
+		return true
 	}
 
-	return errors.Is(e.err, target)
+	var t *Error
+
+	if !errors.As(target, &t) {
+		if e.err == nil {
+			return target == nil
+		}
+
+		return errors.Is(e.err, target)
+	}
+
+	return e.reason == t.reason && e.reason != "" ||
+		errors.Is(e.err, t) || errors.Is(e, t.err)
 }

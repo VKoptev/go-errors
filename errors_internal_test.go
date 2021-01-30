@@ -5,65 +5,75 @@ import (
 	"testing"
 )
 
-var errEx = errors.New("ex")
+var errEx = errors.New("errEx")
 
+//nolint:funlen,gocognit
 func TestError_Is(t *testing.T) {
 	t.Parallel()
 
 	e1 := WithReason("e1")
-	e2 := WithReason("e2")
-	e3 := WithReason("e3")
-	err := e1.WithErr(e2.WithErr(e3.WithErr(errEx)))
+	e2 := WithErr(errEx)
+	e3 := WithX(1)
 
-	if !errors.Is(err, e1) {
-		t.Errorf("err{%v} is not e1{%v}", err, e1)
+	tt := []struct {
+		name string
+		err  error
+		is   []error
+		nis  []error
+	}{
+		{name: "nil", err: nil, is: []error{}, nis: []error{e1, e2, e3, errEx}},
+		{name: "e1", err: e1, is: []error{e1}, nis: []error{e2, e3, errEx}},
+		{name: "with e1", err: WithErr(e1), is: []error{e1}, nis: []error{e2, e3, errEx}},
+		{name: "e1 with e1", err: e1.WithErr(e1), is: []error{e1}, nis: []error{e2, e3, errEx}},
+		{name: "with e1 with e1", err: WithErr(e1).WithErr(e1), is: []error{e1}, nis: []error{e2, e3, errEx}},
+		{name: "e2", err: e2, is: []error{e2, errEx}, nis: []error{e1, e3}},
+		{name: "with e2", err: WithErr(e2), is: []error{e2, errEx}, nis: []error{e1, e3}},
+		{name: "e2 with e2", err: e2.WithErr(e2), is: []error{e2, errEx}, nis: []error{e1, e3}},
+		{name: "with e2 with e2", err: WithErr(e2).WithErr(e2), is: []error{e2, errEx}, nis: []error{e1, e3}},
+		{name: "e1 with e2", err: e1.WithErr(e2), is: []error{e1, e2, errEx}, nis: []error{e3}},
+		{name: "e2 with e1", err: e2.WithErr(e1), is: []error{e1, e2, errEx}, nis: []error{e3}},
+		{name: "with e1 with e2", err: WithErr(e1).WithErr(e2), is: []error{e1, e2, errEx}, nis: []error{e3}},
+		{name: "with e2 with e1", err: WithErr(e2).WithErr(e1), is: []error{e1, e2, errEx}, nis: []error{e3}},
+		{name: "e1 with e3", err: e1.WithErr(e3), is: []error{e1, e3}, nis: []error{e2, errEx}},
+		// high-level WithX couldn't be determined
+		{name: "e3 with e1", err: e3.WithErr(e1), is: []error{e1}, nis: []error{e2, e3, errEx}},
+		{name: "with e1 with e3", err: WithErr(e1).WithErr(e3), is: []error{e1, e3}, nis: []error{e2, errEx}},
+		// high-level WithX couldn't be determined
+		{name: "with e3 with e1", err: WithErr(e3).WithErr(e1), is: []error{e1}, nis: []error{e2, e3, errEx}},
+		{name: "e1 with e2 with e3", err: e1.WithErr(e2).WithErr(e3), is: []error{e1, e2, e3, errEx}, nis: []error{}},
+		{name: "e1 with e3 with e2", err: e1.WithErr(e3).WithErr(e2), is: []error{e1, e2, errEx}, nis: []error{e3}},
+		{name: "e2 with e1 with e3", err: e2.WithErr(e1).WithErr(e3), is: []error{e1, e2, e3, errEx}, nis: []error{}},
+		{name: "e2 with e3 with e1", err: e2.WithErr(e3).WithErr(e1), is: []error{e1, e2, errEx}, nis: []error{e3}},
+		{name: "e3 with e1 with e2", err: e3.WithErr(e1).WithErr(e2), is: []error{e1, e2, errEx}, nis: []error{e3}},
+		{name: "e3 with e2 with e1", err: e3.WithErr(e2).WithErr(e1), is: []error{e1, e2, errEx}, nis: []error{e3}},
+		{
+			name: "thing",
+			err: WithReason("q").WithErr(
+				e1.WithErr(WithReason("w").WithErr(e2.WithErr(e3))).WithX(100),
+			),
+			is:  []error{e1, e2, e3, errEx},
+			nis: []error{},
+		},
 	}
 
-	if !errors.Is(err, e2) {
-		t.Errorf("err{%v} is not e2{%v}", err, e2)
-	}
+	for _, ti := range tt {
+		ti := ti
 
-	if !errors.Is(err, e3) {
-		t.Errorf("err{%v} is not e3{%v}", err, e3)
-	}
+		t.Run(ti.name, func(t *testing.T) {
+			t.Parallel()
 
-	if !errors.Is(err, errEx) {
-		t.Errorf("err{%v} is not ex{%v}", err, errEx)
-	}
-}
+			for _, is := range ti.is {
+				if !errors.Is(ti.err, is) {
+					t.Errorf("err{%v} IS NOT exp{%v}", ti.err, is)
+				}
+			}
 
-func TestError_WithErr(t *testing.T) {
-	t.Parallel()
-
-	e1 := WithReason("e1")
-	e2 := e1.WithErr(errEx)
-	err := e1.WithErr(e2)
-
-	if !errors.Is(err, e1) {
-		t.Errorf("err{%v} is not e1{%v}", err, e1)
-	}
-
-	if !errors.Is(err, e2) {
-		t.Errorf("err{%v} is not e2{%v}", err, e2)
-	}
-
-	if err.Error() != "e1 because: e1 because: ex" {
-		t.Errorf("err{%v} is not {%v}", err, "e1 because: e1 because: ex")
-	}
-
-	e3 := e1.WithX(1)
-	err = e1.WithErr(e3)
-
-	if !errors.Is(err, e1) {
-		t.Errorf("err{%v} is not e1{%v}", err, e1)
-	}
-
-	if !errors.Is(err, e2) {
-		t.Errorf("err{%v} is not e2{%v}", err, e2)
-	}
-
-	if err.Error() != "e1 because: e1 with data: int{1}" {
-		t.Errorf("err{%v} is not {%v}", err, "e1 because: e1 with data: int{1}")
+			for _, nis := range ti.nis {
+				if errors.Is(ti.err, nis) {
+					t.Errorf("err{%v} IS exp{%v}", ti.err, nis)
+				}
+			}
+		})
 	}
 }
 
