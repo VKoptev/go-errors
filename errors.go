@@ -1,10 +1,6 @@
 package errors
 
-import (
-	"errors"
-	"fmt"
-	"strings"
-)
+import "fmt"
 
 // Error is custom error.
 type Error struct {
@@ -24,11 +20,13 @@ func WithErr(err error) *Error {
 }
 
 // WithX returns new Error with set error data.
+// Be aware that high-level WithX couldn't be recognised by Is and errors.Is.
+// Do not use this constructor without especial necessity.
 func WithX(x interface{}) *Error {
 	return &Error{reason: "", err: nil, x: x}
 }
 
-// IfErr returns new Error if specified err is not nil. Otherwise it returns nil.
+// IfErr returns WithErr if specified err is not nil. Otherwise it returns nil.
 func IfErr(err error) *Error {
 	if err == nil {
 		return nil
@@ -59,7 +57,7 @@ func (e *Error) WithErr(err error) *Error {
 	if e.err != nil {
 		var t *Error
 
-		if errors.As(e.err, &t) {
+		if As(e.err, &t) {
 			err = t.WithErr(err)
 		} else {
 			err = &Error{reason: e.err.Error(), err: err, x: nil}
@@ -97,29 +95,29 @@ func (e *Error) Error() string {
 		return "nil"
 	}
 
-	var buf strings.Builder
+	s := ""
 
 	if e.reason != "" {
-		buf.WriteString(e.reason)
+		s += e.reason
 	}
 
 	if e.err != nil {
-		if buf.Len() > 0 {
-			buf.WriteString(" because: ")
+		if len(s) > 0 {
+			s += " because: "
 		}
 
-		buf.WriteString(e.err.Error())
+		s += e.err.Error()
 	}
 
 	if e.x != nil {
-		if buf.Len() > 0 {
-			buf.WriteString(" with data: ")
+		if len(s) > 0 {
+			s += " with data: "
 		}
 
-		buf.WriteString(fmt.Sprintf("%T{%+v}", e.x, e.x))
+		s += fmt.Sprintf("%T{%+v}", e.x, e.x)
 	}
 
-	return buf.String()
+	return s
 }
 
 // Unwrap implements errors/Unwrap interface.
@@ -140,14 +138,14 @@ func (e *Error) Is(target error) bool {
 
 	var t *Error
 
-	if !errors.As(target, &t) {
+	if !As(target, &t) {
 		if e.err == nil {
 			return target == nil
 		}
 
-		return errors.Is(e.err, target)
+		return Is(e.err, target)
 	}
 
 	return e.reason == t.reason && e.reason != "" ||
-		errors.Is(e.err, t) || errors.Is(e, t.err)
+		Is(e.err, t) || Is(e, t.err)
 }
