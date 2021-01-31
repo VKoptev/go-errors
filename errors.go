@@ -16,6 +16,10 @@ func WithReason(code string) *Error {
 
 // WithErr returns new Error with set error.
 func WithErr(err error) *Error {
+	if err == nil {
+		return nil
+	}
+
 	return &Error{reason: "", err: err, x: nil}
 }
 
@@ -24,15 +28,6 @@ func WithErr(err error) *Error {
 // Do not use this constructor without especial necessity.
 func WithX(x interface{}) *Error {
 	return &Error{reason: "", err: nil, x: x}
-}
-
-// IfErr returns WithErr if specified err is not nil. Otherwise it returns nil.
-func IfErr(err error) *Error {
-	if err == nil {
-		return nil
-	}
-
-	return WithErr(err)
 }
 
 // WithReason sets error reason and returns self.
