@@ -74,7 +74,7 @@ func (e *Error) WithX(x interface{}) *Error {
 	}
 
 	if e.x != nil {
-		return &Error{reason: e.Error(), err: nil, x: x}
+		return &Error{reason: "", err: e, x: x}
 	}
 
 	return &Error{reason: e.reason, err: e.err, x: x}
