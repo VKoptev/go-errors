@@ -43,7 +43,8 @@ func (e *Error) WithReason(reason string) *Error {
 	return &Error{reason: reason, err: e.err, x: e.x}
 }
 
-// WithErr sets error and returns self.
+// WithErr returns new Error with set sub-error.
+// If current Error doesn't contain sub-error WithErr clones reason and data into new Error.
 func (e *Error) WithErr(err error) *Error {
 	if e == nil {
 		return WithErr(err)
@@ -62,7 +63,9 @@ func (e *Error) WithErr(err error) *Error {
 	return &Error{reason: e.reason, err: err, x: e.x}
 }
 
-// WithX sets error data and returns self.
+// WithX returns new Error with set data.
+// If current Error already contains data WithX wrap current Error into sub-error.
+// Otherwise WithX clones reason and sub-error into new Error.
 func (e *Error) WithX(x interface{}) *Error {
 	if e == nil {
 		return WithX(x)
@@ -76,7 +79,8 @@ func (e *Error) WithX(x interface{}) *Error {
 }
 
 // IfErr sets error and returns self if specified err is not nil. Otherwise it returns nil.
-func (e *Error) IfErr(err error) *Error {
+// To be sure there is no case "nil is not always nil" IfErr returns built-in error interface.
+func (e *Error) IfErr(err error) error {
 	if err == nil {
 		return nil
 	}
@@ -127,6 +131,10 @@ func (e *Error) Unwrap() error {
 //nolint:gocognit
 // Is implements errors/Is interface.
 func (e *Error) Is(target error) bool {
+	if e == nil {
+		return target == nil
+	}
+
 	if e.Error() == target.Error() || e.reason == target.Error() {
 		return true
 	}

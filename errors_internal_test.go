@@ -46,10 +46,15 @@ func TestError_Is(t *testing.T) {
 		{name: "e2 with e3 with e1", err: e2.WithErr(e3).WithErr(e1), is: []error{e1, e2, errEx}, nis: []error{e3}},
 		{name: "e3 with e1 with e2", err: e3.WithErr(e1).WithErr(e2), is: []error{e1, e2, errEx}, nis: []error{e3}},
 		{name: "e3 with e2 with e1", err: e3.WithErr(e2).WithErr(e1), is: []error{e1, e2, errEx}, nis: []error{e3}},
+
+		{name: "e1 if nil", err: e1.IfErr(nil), is: []error{}, nis: []error{e1, e2, e3, errEx}},
+		{name: "e1 if err", err: e1.IfErr(errEx), is: []error{e1, e2, errEx}, nis: []error{e3}},
+		{name: "e2 with (e1 if nil)", err: e2.WithErr(e1.IfErr(nil)), is: []error{e2, errEx}, nis: []error{e1, e3}},
+		{name: "e2 with (e1 if err)", err: e2.WithErr(e1.IfErr(errEx)), is: []error{e1, e2, errEx}, nis: []error{e3}},
 		{
 			name: "thing",
 			err: WithReason("q").WithErr(
-				e1.WithErr(WithReason("w").WithErr(e2.WithErr(e3))).WithX(100),
+				WithErr(e1.WithErr(WithReason("w").WithErr(e2.WithErr(e3)))).WithX(100),
 			),
 			is:  []error{e1, e2, e3, errEx},
 			nis: []error{},
@@ -74,25 +79,6 @@ func TestError_Is(t *testing.T) {
 				}
 			}
 		})
-	}
-}
-
-func TestIfErr(t *testing.T) {
-	t.Parallel()
-
-	if err := IfErr(nil); err != nil {
-		t.Errorf("err{%v} is not nil", err)
-	}
-
-	e1 := WithReason("e1")
-	err := IfErr(e1)
-
-	if err == nil {
-		t.Errorf("err{%v} is nil", err)
-	}
-
-	if !errors.Is(err, e1) {
-		t.Errorf("err{%v} is not e1{%v}", err, e1)
 	}
 }
 
